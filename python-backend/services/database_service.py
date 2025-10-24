@@ -37,9 +37,9 @@ def store_photos(photos: List[Dict[str, str]]) -> int:
                 photo['fileName'],
                 photo['driveLink'],
                 photo['caption'],
-                embeddings[idx]
+                emb  # keep as Python list
             )
-            for idx, photo in enumerate(photos)
+            for photo, emb in zip(photos, embeddings)
         ]
 
         insert_query = """
@@ -55,7 +55,6 @@ def store_photos(photos: List[Dict[str, str]]) -> int:
         execute_values(cursor, insert_query, values)
 
         conn.commit()
-
         return len(photos)
 
     except Exception as e:
@@ -65,6 +64,7 @@ def store_photos(photos: List[Dict[str, str]]) -> int:
     finally:
         cursor.close()
         conn.close()
+
 
 def search_photos(query_embedding: List[float], limit: int = 10) -> List[Dict]:
     conn = get_db_connection()
@@ -84,9 +84,8 @@ def search_photos(query_embedding: List[float], limit: int = 10) -> List[Dict]:
             LIMIT %s
         """
 
-        embedding_str = f"[{','.join(map(str, query_embedding))}]"
-
-        cursor.execute(search_query, (embedding_str, embedding_str, limit))
+        # Pass embedding as a list directly
+        cursor.execute(search_query, (query_embedding, query_embedding, limit))
 
         results = cursor.fetchall()
 
