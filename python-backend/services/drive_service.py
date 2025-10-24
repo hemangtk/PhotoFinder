@@ -1,8 +1,27 @@
 import re
-import requests
 from typing import List, Dict
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
+# ----------------------
+# CONFIG
+# ----------------------
+SERVICE_ACCOUNT_FILE = 'credentials.json'  # Place your downloaded JSON here
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
+# Initialize Google Drive API client
+creds = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE, scopes=SCOPES
+)
+service = build('drive', 'v3', credentials=creds)
+
+# ----------------------
+# Helper Functions
+# ----------------------
 def extract_folder_id(drive_link: str) -> str:
+    """
+    Extract Google Drive folder ID from a link.
+    """
     patterns = [
         r'folders/([a-zA-Z0-9-_]+)',
         r'id=([a-zA-Z0-9-_]+)',
@@ -16,40 +35,36 @@ def extract_folder_id(drive_link: str) -> str:
     raise ValueError('Invalid Google Drive folder link')
 
 def fetch_drive_images(drive_link: str) -> List[Dict[str, str]]:
-    try:
-        folder_id = extract_folder_id(drive_link)
-    except ValueError as e:
-        raise ValueError(f'Could not extract folder ID from link: {str(e)}')
+    """
+    Fetch all image files from a Google Drive folder using service account.
+    Returns a list of dictionaries with fileName, fileId, driveLink, and directLink.
+    """
+    folder_id = extract_folder_id(drive_link)
 
-    api_url = f'https://www.googleapis.com/drive/v3/files'
-    params = {
-        'q': f"'{folder_id}' in parents and (mimeType contains 'image/jpeg' or mimeType contains 'image/png' or mimeType contains 'image/jpg')",
-        'fields': 'files(id, name, webViewLink, webContentLink)',
-        'key': 'YOUR_GOOGLE_API_KEY'
-    }
-
-    images = []
+    query = (
+        f"'{folder_id}' in parents and "
+        "(mimeType contains 'image/jpeg' or mimeType contains 'image/png' or mimeType contains 'image/jpg')"
+    )
 
     try:
-        response = requests.get(api_url, params=params)
-        response.raise_for_status()
-        data = response.json()
+        results = service.files().list(
+            q=query,
+            fields="files(id, name, webViewLink, webContentLink)"
+        ).execute()
 
-        files = data.get('files', [])
+        files = results.get('files', [])
+        images = []
 
         for file in files:
-            file_id = file['id']
-            file_name = file['name']
-
-            if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
-                images.append({
-                    'fileName': file_name,
-                    'fileId': file_id,
-                    'driveLink': f"https://drive.google.com/file/d/{file_id}/view",
-                    'directLink': f"https://drive.google.com/uc?export=view&id={file_id}"
-                })
+            images.append({
+                'fileName': file['name'],
+                'fileId': file['id'],
+                'driveLink': f"https://drive.google.com/file/d/{file['id']}/view",
+                'directLink': f"https://drive.google.com/uc?export=view&id={file['id']}"
+            })
 
         return images
 
-    except requests.exceptions.RequestException as e:
-        raise Exception(f'Failed to fetch from Google Drive API: {str(e)}')
+    except Exception as e:
+        print("Error fetching Drive images:", e)
+        raise Exception(f"Failed to fetch from Google Drive API: {str(e)}")
