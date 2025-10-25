@@ -1,4 +1,6 @@
 import re
+import os
+import json
 from typing import List, Dict
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -6,7 +8,7 @@ from googleapiclient.discovery import build
 # ----------------------
 # CONFIG
 # ----------------------
-SERVICE_ACCOUNT_FILE = 'credentials.json'  # Place your downloaded JSON here
+SERVICE_ACCOUNT_FILE = json.loads(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 # Initialize Google Drive API client
