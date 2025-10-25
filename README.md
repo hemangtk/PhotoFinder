@@ -2,6 +2,12 @@
 
 A full-stack web application that lets users search photos by natural language descriptions using AI-powered image captioning and semantic search. Connect your Google Drive folder, let BLIP generate captions, and search using everyday language like "person in front of a church" or "beach sunset".
 
+## 🚀 Live Deployment
+
+You can try the application here: **[https://photo-finder-five.vercel.app](https://photo-finder-five.vercel.app)**
+
+![Home Page](image.png)
+
 ## Features
 
 - **Google Drive Integration**: Connect public Drive folders without downloading images
